@@ -1,45 +1,35 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/UserContextProvider";
-import { io } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
-
-const socket = io('http://localhost:5000')
+import { useSocket } from '../context/SocketContextProvider.jsx'
 
 const Chat = () => {
     const navigate = useNavigate()
     const [userchat , setUserChat] = useState("")
     const [messages , setMessages] = useState([])
-    const [creator , setCreator] = useState(false)
 
     const { user } = useAuth();
+    const { socket } = useSocket();
 
-    
-    useEffect(()=>{
-
-        if(user.joinedRoomCode){
-           const roomCode = user.joinedRoomCode
-           socket.emit('joinRoom', roomCode)
+    useEffect(() => {
+        const roomCode = user.roomCode
+        if(user.joined){
+            socket.emit('joinRoom', roomCode)
+        }else{
+            socket.emit('createRoom', roomCode)
         }
+    },[user.roomCode])
 
-        if(user.roomCode){
-            setCreator(true)
-            const roomCode = user.roomCode
-            socket.emit('createRoom' , roomCode)
-        }
-
-        const handleMessage = (message) => {
-            setMessages((prevMessages) => [...prevMessages, message]);
-        };
-
-        socket.on('message', handleMessage);
-
+    useEffect(() => {
+        socket.on("message", (message) => {
+            console.log('Received message:', message);
+            setMessages((prev) => [...prev, message])
+        })
+        
         return () => {
-            socket.off('message', (message)=>{
-                setMessages((prevMessages) => [...prevMessages , message])
-            })
+            socket.off("message")
         }
-    },[user, setCreator, setMessages, socket])
-
+    } , [])
     
 
     const handleUserChat = (e) => {
@@ -48,7 +38,7 @@ const Chat = () => {
 
     const handleSendMessage = (e) => {
         e.preventDefault()
-        const roomCode = user.roomCode || user.joinedRoomCode
+        const roomCode = user.roomCode
         socket.emit('chatMessage' , {roomCode:roomCode , message:userchat})
         setUserChat("")
     }
@@ -56,14 +46,14 @@ const Chat = () => {
     const handleLeave = (e) => {
         e.preventDefault()
         socket.emit('leaveRoom')
-        creator ? user.roomCode  = "" : user.joinedRoomCode = ""
+        user.roomCode = ""
         navigate("/message")
     }
 
     return(
         <div className="h-screen w-screen bg-[#023047] overflow-hidden">
             <div className="w-screen h-[60px] bg-[#fb8500] flex items-center justify-around">
-                <div className="font-poppins text-xl text-white">Room Code : {creator ? user.roomCode : user.joinedRoomCode}</div>
+                <div className="font-poppins text-xl text-white">Room Code : {user.roomCode}</div>
 
                 <div className="font-poppins text-xl text-white">UserName : {user.userName}</div>
             </div>

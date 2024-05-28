@@ -1,9 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/UserContextProvider.jsx'
-import { io } from 'socket.io-client'
-
-const socket = io('http://localhost:5000')
 
 function MessagePage() {
   const navigate = useNavigate()
@@ -33,7 +30,8 @@ function MessagePage() {
 
   const handleJoinRoom = (e) => {
     e.preventDefault()
-    user.joinedRoomCode = joinedRoomCode
+    user.roomCode = joinedRoomCode
+    user.joined = true
     navigate('/chat')
   }
 

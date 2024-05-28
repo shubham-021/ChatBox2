@@ -3,7 +3,6 @@ import connectDB from "./db/index.js";
 import { app } from "./app.js";
 import { Server } from 'socket.io'
 import { createServer } from 'http'
-import cors from 'cors'
 
 dotenv.config({
     path: "./.env"
@@ -12,8 +11,9 @@ dotenv.config({
 const server = createServer(app)
 const io = new Server(server , {
     cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
+        origin: "http://localhost:5173",
+        methods: ["GET", "POST"],
+        credentials: true
         }
 })
 
@@ -32,15 +32,23 @@ connectDB()
             socket.join(roomCode)
             roomCreators[roomCode] = socket.id
             console.log(`Room created: ${roomCode} by ${socket.id}`)
+            
+            const clients = io.sockets.adapter.rooms.get(roomCode);
+            console.log(`Clients in room ${roomCode} after creating room:`, clients ? Array.from(clients) : []);
         })
 
         socket.on('joinRoom',(roomCode) => {
-            socket.join(roomCode)
-            socket.to(roomCode).emit('message','A new user has joined the room.')
-            console.log(`User joined room: ${roomCode}`)
+            socket.join(roomCode);
+            console.log(`User ${socket.id} joined room: ${roomCode}`);
+            io.to(roomCode).emit('message', 'A new user has joined the room');
+            
+            // Log all clients in the room
+            const clients = io.sockets.adapter.rooms.get(roomCode);
+            console.log(`Clients in room ${roomCode} after joining:`, clients ? Array.from(clients) : []);
         })
 
         socket.on('chatMessage',({roomCode , message}) => {
+            console.log(`Server received message: ${message} for room: ${roomCode}`);
             io.to(roomCode).emit('message', message)
             console.log(`Message sent to room ${roomCode}: ${message}`)
         })

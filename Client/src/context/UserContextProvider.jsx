@@ -10,7 +10,7 @@ const MyProvider = ({children}) => {
         token: null,
         userName: null,
         roomCode: null,
-        joinedRoomCode: null
+        joined: null
     });
 
     return(
